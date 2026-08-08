@@ -1,0 +1,87 @@
+name: Bug report
+description: Report a problem with MissionObjectiveCounter
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a problem. This mod is almost
+        always diagnosed from `UE4SS.log`, so the log excerpt below is the
+        most important part of this form. Filling it in up front saves a
+        few rounds of back and forth.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened, and what did you expect instead?
+      description: A short description of the problem and the behaviour you expected to see.
+      placeholder: |
+        What happened:
+        What I expected:
+    validations:
+      required: true
+
+  - type: input
+    id: mod-version
+    attributes:
+      label: Mod version
+      description: >-
+        From the line UE4SS.log prints when the mod loads, which starts
+        with a version like `v1.0`.
+      placeholder: v1.0
+    validations:
+      required: false
+
+  - type: input
+    id: ue4ss-version
+    attributes:
+      label: UE4SS version
+      description: The UE4SS build you are running, for example v3.0.1 Beta.
+      placeholder: v3.0.1 Beta
+    validations:
+      required: false
+
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Session type
+      description: Was this single player, co-op as the host, or co-op as a joining client?
+      options:
+        - Single player
+        - Co-op, hosting
+        - Co-op, joining client
+        - Not sure
+    validations:
+      required: false
+
+  - type: dropdown
+    id: diagnostics
+    attributes:
+      label: Was CONFIG.DIAGNOSTICS set to true?
+      description: >-
+        This changes how much detail UE4SS.log contains. If you have not
+        tried it yet, setting it to true, reproducing the problem and
+        pasting the resulting log below is the single most useful thing
+        you can do for this report.
+      options:
+        - "Yes"
+        - "No"
+        - Not sure
+    validations:
+      required: false
+
+  - type: textarea
+    id: log
+    attributes:
+      label: Relevant part of UE4SS.log
+      description: >-
+        Paste the relevant excerpt, not the whole file. The lines that
+        matter most, if present, are: the load line naming the mod version;
+        `character HUD constructed`; `panel attached to HUD overlay`; the
+        three lines stating which thread the attach path, the hotkey path
+        and the poll loop are each running on; and any line containing
+        `could not` or `panel hidden`.
+      render: text
+    validations:
+      required: true
