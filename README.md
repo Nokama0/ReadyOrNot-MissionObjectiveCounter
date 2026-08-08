@@ -321,6 +321,42 @@ carry no `[diag]` prefix and are written on every run, so searching for
   example `score groups read via :get() route, 5 groups, first is
   MissionObjectives`.
 
+## For contributors
+
+Two scripts under `tools\` support working on this mod:
+
+- **`tools\run-tests.ps1`** runs the headless layout test suite against a
+  real Lua 5.4 interpreter (see "Lua dialect" in `UE4SS-NOTES.md` for why
+  it has to be 5.4 and not LuaJIT or 5.1). From the repo root:
+
+  ```powershell
+  .\tools\run-tests.ps1
+  ```
+
+  If `lua` is not on your `PATH`, set `$env:LUA` to the interpreter path
+  first.
+
+- **`tools\deploy.ps1`** copies `Scripts\*.lua` into your local game's
+  UE4SS mods folder, so you can test a change without doing it by hand.
+  It looks for the game folder in this order: a `-GameRoot` parameter, the
+  `RON_GAME_ROOT` environment variable, then auto-detection through Steam.
+  From the repo root:
+
+  ```powershell
+  .\tools\deploy.ps1
+  ```
+
+  or, if auto-detection does not find your install:
+
+  ```powershell
+  .\tools\deploy.ps1 -GameRoot "D:\SteamLibrary\steamapps\common\Ready Or Not"
+  ```
+
+  It refuses to run while the game is open, since writing into a watched
+  `Scripts` folder of a live process has crashed it before; pass `-Force`
+  to override once you understand that risk. It never edits `mods.txt`;
+  if the mod is not enabled there yet, it prints the line to add.
+
 ## Licence
 
 MIT. The full text is in the `LICENSE` file next to this README.
