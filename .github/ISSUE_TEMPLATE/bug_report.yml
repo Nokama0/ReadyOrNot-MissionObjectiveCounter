@@ -28,17 +28,21 @@ body:
       label: Mod version
       description: >-
         From the line UE4SS.log prints when the mod loads, which starts
-        with a version like `v1.0`.
-      placeholder: v1.0
+        with a version like `v1.1`.
+      placeholder: v1.1
     validations:
       required: false
 
   - type: input
     id: ue4ss-version
     attributes:
-      label: UE4SS version
-      description: The UE4SS build you are running, for example v3.0.1 Beta.
-      placeholder: v3.0.1 Beta
+      label: UE4SS build
+      description: >-
+        Paste the whole `UE4SS - ...` line from the top of UE4SS.log. The
+        version alone cannot identify a build: the experimental and stable
+        releases both call themselves v3.0.1 Beta, and only the Git SHA on
+        that line says which one you have.
+      placeholder: UE4SS - v3.0.1 Beta #0 - Git SHA #1c1a1497
     validations:
       required: false
 

@@ -6,9 +6,12 @@ open, or writing their own UE4SS Lua mod and running into the same things.
 Most of what follows is not documented anywhere and was established by
 running it.
 
-Everything here was observed against **UE4SS v3.0.1 Beta** and **Ready or Not
-build `23037110`** unless stated otherwise. Treat the build stamps as what was
-actually checked, not as a claim about every version.
+Everything here was observed against the **UE4SS experimental build** (which
+reports itself as `v3.0.1 Beta`; the SHAs actually checked are `c838a8ac` and
+`1c1a1497`) and **Ready or Not build `23037110`** unless stated otherwise.
+Treat the build stamps as what was actually checked, not as a claim about every
+version. The tagged stable v3.0.1 release is a different build with a different
+folder layout and a smaller Lua API; see section 7.
 
 **Contents**
 
@@ -320,10 +323,13 @@ consequences:
   every object you care about. Look for an already-constructed instance at load
   as well, or you see nothing until the next level load.
 - **Widgets from the previous script instance are still parented and no longer
-  tracked.** Without cleanup, every reload stacks another copy on screen. Name
-  every widget you construct with a distinctive prefix so the old ones are
+  tracked.** Without cleanup, every reload stacks another copy on screen. Give
+  the widget you attach to the HUD a distinctive prefix so the old ones are
   identifiable, and match on that prefix so an unrelated child can never be
-  removed.
+  removed. Only that outermost widget needs a name: cleanup walks the overlay's
+  direct children, and everything nested below is removed with its parent.
+  Naming the whole subtree costs an interned string per widget for nothing (see
+  below).
 - **Widget names must be unique within their outer, and your counters restart
   at zero while the old widgets are still alive.** Asking
   `StaticConstructObject` for a name that is still taken makes the engine
@@ -331,6 +337,26 @@ consequences:
   widget you no longer track. Seed the counter per script instance, for example
   by mixing a fresh table's address (which differs between Lua states) with the
   process clock (which differs between reloads).
+- **The name argument is optional.** `StaticConstructObject(class, outer)` is a
+  valid call and lets the engine name the object. Prefer it for every widget
+  that does not have to be found again by name.
+
+**Every string handed to `FName` is interned by UE4SS, and builds before
+2026-06-14 keyed that pool on a `string_view` into the caller's buffer.** Once
+Lua collected the string, the key dangled and later lookups compared against
+freed memory, which surfaces as an `EXCEPTION_ACCESS_VIOLATION` with no Lua
+error, because `pcall` cannot catch a native fault. A mod that builds a widget
+tree in one tick is the worst case: this panel constructed 108 widgets for a
+typical mission, each with a freshly concatenated name, which is 108 chances to
+hit it on the first keypress. Fixed upstream in
+[#1271](https://github.com/UE4SS-RE/RE-UE4SS/pull/1271).
+
+Two defences, both cheap and worth applying regardless of build. Name only what
+must be findable, per the point above. Then hold a permanent Lua reference to
+each string you do pass to `FName`, so the buffer the pool points at cannot be
+collected out from under it. Neither makes a process immune, since the pool is
+shared and any mod can poison it, but together they remove your own
+contribution.
 - **Keybinds survive the reload.** An unconditional `RegisterKeyBind` leaves two
   handlers on one key: both fire on one press, the panel toggles twice, and the
   key reads as doing nothing at all. Guard with `IsKeyBindRegistered`, probing

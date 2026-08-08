@@ -1,6 +1,6 @@
 # MissionObjectiveCounter
 
-**Version 1.0**
+**Version 1.1**
 
 A toggleable in-mission panel for Ready or Not that shows live suspect,
 civilian, evidence, report, score group and objective counts while you play.
@@ -19,11 +19,20 @@ Press **F7** in a mission to show it, press F7 again to hide it.
 **UE4SS** is an injectable Lua scripting system for UE4/UE5 games. It is not
 included in this zip; install it yourself from the source project:
 
-- Releases: <https://github.com/UE4SS-RE/RE-UE4SS/releases>
+- Download: <https://github.com/UE4SS-RE/RE-UE4SS/releases/tag/experimental-latest>
 
-This mod was built and tested against **UE4SS v3.0.1 Beta**. If your install
-uses a different build and the mod does not load, check `UE4SS.log` first
-(see "Verifying it loaded" below).
+This mod needs the **experimental** build, not the tagged stable release. Both
+report themselves as `v3.0.1 Beta`, so the version string cannot tell them
+apart. The folder layout can: the experimental build installs into
+`ReadyOrNot\Binaries\Win64\ue4ss\`, while stable puts `UE4SS.dll` directly in
+`Win64\`. On stable, `NotifyOnNewObject` never fires for this game's HUD class,
+so the mod loads and binds its key but can never attach a panel.
+
+`experimental-latest` is a rolling tag. It is rebuilt continuously and never
+changes name, so a copy downloaded months ago still calls itself
+experimental-latest. Builds from before **14 June 2026** carry a use-after-free
+in UE4SS's string intern pool that can crash the game when a mod constructs
+many widgets at once. Download it again if you are unsure which you have.
 
 The reflected signatures this mod reads (`GetSuspectCount`, `GetScoreGroups`
 and the rest) were read from and confirmed against **Ready or Not build
@@ -50,8 +59,6 @@ build you are on when reporting it.
 
    ```
    ue4ss\Mods\MissionObjectiveCounter\
-       README.md
-       UE4SS-NOTES.md
        LICENSE
        Scripts\
            main.lua
@@ -60,11 +67,12 @@ build you are on when reporting it.
            panel.lua
    ```
 
-   `UE4SS-NOTES.md` is not needed to run the mod and can be left where it is.
-   It documents the UE4SS behaviour this mod depends on, along with the
-   reflected game functions and enum values it reads, for anyone reading the
-   source or writing their own UE4SS Lua mod. Code comments point at it by
-   name.
+   The download carries the mod and its licence only. This README and
+   `UE4SS-NOTES.md` live in the repository rather than the zip, so the thing
+   you drag into `ue4ss\Mods\` is only what the game needs. `UE4SS-NOTES.md`
+   documents the UE4SS behaviour this mod depends on, along with the reflected
+   game functions and enum values it reads, for anyone reading the source or
+   writing their own UE4SS Lua mod. Code comments point at it by name.
 
 4. Open `ue4ss\Mods\mods.txt` in a text editor and add this line, placed
    **above** the `Keybinds` line near the bottom of the file:
@@ -83,10 +91,15 @@ F7 is only the default; see `CONFIG.TOGGLE_KEY` under "Configuration" to
 change it.
 
 F7 was chosen to stay clear of F8 and of UE4SS's own built-in dumper keybinds
-on Ctrl+J, Ctrl+H and Ctrl+Numpad. If F7 does nothing at all, even outside a
-mission, something else may already hold it: check `UE4SS.log` for the line
-described under "Verifying it loaded", which says explicitly whether the key
-bound or was already taken.
+on Ctrl+J, Ctrl+H and Ctrl+Numpad. It is not clear of the wider Ready or Not
+mod ecosystem, where several published mods also use F7. UE4SS dispatches a
+press to every handler registered on a key, so two mods sharing F7 both fire;
+that is survivable, but if the other mod does something disruptive on its turn,
+change `CONFIG.TOGGLE_KEY` here rather than uninstalling either.
+
+If F7 does nothing at all, even outside a mission, check `UE4SS.log` for the
+line described under "Verifying it loaded", which says explicitly whether the
+key bound or was already taken.
 
 The panel is only drawn while you are in a mission. It does not appear in
 menus or the ready room, and it never intercepts a mouse click.
