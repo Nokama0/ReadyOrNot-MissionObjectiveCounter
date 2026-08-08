@@ -59,18 +59,49 @@ pcall(function()
     counter = (addr + math.floor(os.clock() * 1000)) % 1000000
 end)
 
-local function make(shortName, outer)
+-- Every string handed to FName is interned by UE4SS. Builds before 2026-06-14
+-- keyed that pool on a string_view into the caller's buffer, so a collected
+-- Lua string left a dangling key. A permanent reference outlives the entry.
+local pinnedNames = {}
+
+--- Construct a UMG widget. Only `named` ones carry the MOC_ prefix
+--- removeStalePanels matches, and only the outermost widget needs it.
+local function construct(shortName, outer, named)
     local cls = classOf("/Script/UMG." .. shortName)
     if not cls then return nil end
+    if not named then
+        return try(function() return StaticConstructObject(cls, outer) end, nil)
+    end
     counter = counter + 1
+    local name = NAME_PREFIX .. shortName .. counter
+    pinnedNames[#pinnedNames + 1] = name
     return try(function()
-        return StaticConstructObject(cls, outer,
-            FName(NAME_PREFIX .. shortName .. counter))
+        return StaticConstructObject(cls, outer, FName(name))
     end, nil)
 end
 
+local function make(shortName, outer)
+    return construct(shortName, outer, false)
+end
+
+local function makeNamed(shortName, outer)
+    return construct(shortName, outer, true)
+end
+
+--- Write text to a widget. Returns whether the write actually landed.
 local function setText(widget, s)
-    pcall(function() widget:SetText(FText(s or "")) end)
+    return (pcall(function() widget:SetText(FText(s or "")) end))
+end
+
+--- Push text only when it changed; most polls repeat what is already on
+--- screen. Cached only after a successful write, since recording a failed one
+--- would freeze that cell for the life of the panel. Returns whether it wrote.
+local function setTextIfChanged(row, key, widget, s)
+    s = s or ""
+    if row[key] == s then return false end
+    if not setText(widget, s) then return false end
+    row[key] = s
+    return true
 end
 
 -- Status colour is an enhancement on top of the text prefix layout.lua
@@ -297,7 +328,8 @@ function M.attach(hud, cfg)
     -- for is already unparented by the time it is requested.
     removeStalePanels(root)
 
-    local scaleBox = make("ScaleBox", hud)
+    -- Named: the only widget added to the overlay, so the only one to find again.
+    local scaleBox = makeNamed("ScaleBox", hud)
     local border   = make("Border", hud)
     local vbox     = make("VerticalBox", hud)
     if not (scaleBox and border and vbox) then
@@ -370,16 +402,20 @@ function M.attach(hud, cfg)
                 log("could not build all " .. n .. " rows, keeping the previous panel state")
             end
         end
+        -- A rebuild swaps in fresh row tables, so the tracking below starts
+        -- empty exactly when the widgets are new.
         for i, r in ipairs(self.rows) do
             local data = rows[i]
             if data then
                 if r.span then
-                    setText(r.span, spanText(data))
+                    setTextIfChanged(r, "lastSpan", r.span, spanText(data))
                 else
-                    setText(r.label, data.label)
-                    setText(r.value, data.value)
-                    setText(r.detail, data.detail)
-                    if data.kind == "entry" then
+                    local labelChanged =
+                        setTextIfChanged(r, "lastLabel", r.label, data.label)
+                    setTextIfChanged(r, "lastValue", r.value, data.value)
+                    setTextIfChanged(r, "lastDetail", r.detail, data.detail)
+                    -- Colour follows the label, so it only reapplies on a change.
+                    if data.kind == "entry" and labelChanged then
                         applyStatusColor(self, r.label, data.label)
                     end
                 end

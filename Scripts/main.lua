@@ -8,7 +8,7 @@
 -- repository: https://github.com/Nokama0/ReadyOrNot-MissionObjectiveCounter
 
 -- Logged on load, so UE4SS.log names the build that is actually installed.
-local VERSION = "1.0"
+local VERSION = "1.1"
 
 -- CONFIG.TOGGLE_KEY is an opaque UE4SS Key value with no reliable to-string,
 -- so this is kept in sync with it by hand for log messages.
