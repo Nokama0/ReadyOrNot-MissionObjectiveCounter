@@ -25,7 +25,9 @@ try {
 
     & $lua tests/layout_spec.lua
     if ($LASTEXITCODE -ne 0) { throw "layout tests failed" }
-    Write-Host "layout tests passed" -ForegroundColor Green
+    & $lua tests/source_spec.lua
+    if ($LASTEXITCODE -ne 0) { throw "source tests failed" }
+    Write-Host "all tests passed" -ForegroundColor Green
 } finally {
     Pop-Location
 }

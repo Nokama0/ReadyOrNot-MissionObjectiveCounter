@@ -42,7 +42,7 @@ body:
         version alone cannot identify a build: the experimental and stable
         releases both call themselves v3.0.1 Beta, and only the Git SHA on
         that line says which one you have.
-      placeholder: UE4SS - v3.0.1 Beta #0 - Git SHA #1c1a1497
+      placeholder: UE4SS - v3.0.1 Beta #0 - Git SHA #1ba38db4
     validations:
       required: false
 

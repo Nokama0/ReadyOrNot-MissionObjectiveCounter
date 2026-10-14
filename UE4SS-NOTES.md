@@ -9,6 +9,10 @@ running it.
 Everything here was observed against the **UE4SS experimental build** (which
 reports itself as `v3.0.1 Beta`; the SHAs actually checked are `c838a8ac` and
 `1c1a1497`) and **Ready or Not build `23037110`** unless stated otherwise.
+Re-checked on 2026-10-14 against UE4SS `1ba38db4` (`v3.0.1-1176`) and Ready or
+Not build `25784851` in single player: the panel attached, every read
+resolved, and hot reload re-attached cleanly. The one behaviour change found is
+in section 2.
 Treat the build stamps as what was actually checked, not as a claim about every
 version. The tagged stable v3.0.1 release is a different build with a different
 folder layout and a smaller Lua API; see section 7.
@@ -73,13 +77,21 @@ local a, b = {}, {}
 mgr:GetEvidenceCount(a, b)
 ```
 
-**UE4SS fills the tables keyed by each parameter's declared name.** A live run
-showed every out-param landing in the *first* table, keyed by its real
-parameter name, so after the call above the value is at `a.EvidenceCollected`
-and `a.TotalEvidence`, not at `a[1]` and `b[1]`. Reading each parameter by its
-own declared name, searching the tables you passed in order, is correct whether
-the binding fills one table with everything or fills each table with only its
-own key.
+**UE4SS fills the tables keyed by each parameter's declared name**, never
+positionally: look for `EvidenceCollected`, not `a[1]`. Which table the value
+lands in depends on the build:
+
+- **Before UE4SS commit `3a4b6422`** (merged 2026-10-09, "Non-struct/array out
+  params corrupt following params", #1454), every non-struct out-param landed
+  in the *first* table: `a.EvidenceCollected` and `a.TotalEvidence`, with `b`
+  left empty. That was a bug. UE4SS left the first table on the Lua stack, so
+  every later out-param was bound to it as well.
+- **From that commit on** (checked on `1ba38db4`), each out-param gets its own
+  table: `a.EvidenceCollected` and `b.TotalEvidence`.
+
+Reading each parameter by its own declared name, searching every table you
+passed in order, is correct on both. Code that reads only the first table
+silently loses every value but the first on current builds.
 
 ### The two error strings
 

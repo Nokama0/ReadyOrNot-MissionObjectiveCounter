@@ -36,7 +36,8 @@ many widgets at once. Download it again if you are unsure which you have.
 
 The reflected signatures this mod reads (`GetSuspectCount`, `GetScoreGroups`
 and the rest) were read from and confirmed against **Ready or Not build
-`23037110`**. That is a recorded baseline, not an enforced requirement: the
+`23037110`**, and confirmed again on build `25784851` with UE4SS `1ba38db4` on
+14 October 2026. That is a recorded baseline, not an enforced requirement: the
 mod does not check the game's version and will still try to load on a
 different build. If the game updates and the counters stop matching what you
 see on screen, or `UE4SS.log` starts logging reads it could not complete,
@@ -338,7 +339,7 @@ carry no `[diag]` prefix and are written on every run, so searching for
 
 Two scripts under `tools\` support working on this mod:
 
-- **`tools\run-tests.ps1`** runs the headless layout test suite against a
+- **`tools\run-tests.ps1`** runs the headless test suites against a
   real Lua 5.4 interpreter (see "Lua dialect" in `UE4SS-NOTES.md` for why
   it has to be 5.4 and not LuaJIT or 5.1). From the repo root:
 
