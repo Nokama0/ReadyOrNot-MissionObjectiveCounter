@@ -1,0 +1,7 @@
+# Keeps the CI workflow's actions current; the mod itself has no package dependencies.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
