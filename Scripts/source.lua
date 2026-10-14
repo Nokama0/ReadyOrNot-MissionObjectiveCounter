@@ -217,10 +217,10 @@ end
 -- ------------------------------------------------------ tables out-param shape
 
 --- Resolve one out-parameter by its own declared name, searching every table
---- passed to the call, in order. A live run confirmed UE4SS fills ONE table
---- (the first) with every out-param, keyed by its real parameter name, which
---- is exactly the `names` list callOut already passes. Searching all of them
---- also covers a build that fills each table with only its own key.
+--- passed to the call, in order. UE4SS keys each value by its real parameter
+--- name, which is the `names` list callOut passes. Builds before 3a4b6422 put
+--- every out-param in the first table; later ones give each its own table
+--- (UE4SS-NOTES.md section 2). Searching all tables covers both.
 local function resolveByName(argTables, key)
     for i = 1, #argTables do
         local t = argTables[i]
@@ -393,6 +393,24 @@ local function callTablesVariant(obj, fnName, names)
     return out, nil, argTables, n, vals, summariseConvention(names, convByField)
 end
 
+--- Every key=value pair across all out-param tables, sorted, or nil if none.
+-- All tables, not the first: UE4SS from 3a4b6422 on gives each out-param its
+-- own table, so the first holds one field (UE4SS-NOTES.md section 2).
+function M.summariseOutTables(argTables)
+    local parts = {}
+    for i = 1, #argTables do
+        local t = argTables[i]
+        if type(t) == "table" then
+            for k, v in pairs(t) do
+                parts[#parts + 1] = tostring(k) .. "=" .. tostring(v)
+            end
+        end
+    end
+    if #parts == 0 then return nil end
+    table.sort(parts)
+    return table.concat(parts, ", ")
+end
+
 --- Log, once per function, what the tables shape actually found. Runs only
 --- after a call that did not raise, since a raise is already reported by the
 --- "could not read" line below.
@@ -404,41 +422,38 @@ local function logTablesDiscovery(fnName, argTables, n, vals, wonBy)
     if tablesDiagLogged[fnName] then return end
     tablesDiagLogged[fnName] = true
 
-    local first = argTables and argTables[1]
-    local hasPairs = type(first) == "table" and next(first) ~= nil
+    local summary = argTables and M.summariseOutTables(argTables)
 
     if wonBy then
-        local parts = {}
-        if hasPairs then
-            for k, v in pairs(first) do
-                parts[#parts + 1] = tostring(k) .. "=" .. tostring(v)
-            end
-            table.sort(parts)
-        end
         diagLog("out-param table for %s resolved via %s: %s",
             fnName, wonBy,
-            hasPairs and table.concat(parts, ", ") or "(no keys in the first table)")
+            summary or "(no keys in any table)")
         return
     end
 
-    if not hasPairs and n and n > 0 then
+    if not summary and n and n > 0 then
         local retParts = {}
         for i = 1, n do retParts[#retParts + 1] = tostring(vals[i]) end
-        diagLog("out-param table for %s was empty; %d return value%s "
+        diagLog("out-param tables for %s were empty; %d return value%s "
           .. "arrived instead: %s", fnName, n, n == 1 and "" or "s",
             table.concat(retParts, ", "))
         return
     end
 
-    if not hasPairs then
-        diagLog("out-param table for %s: first table is %s and empty, "
-          .. "no return values arrived either", fnName, type(first))
+    if not summary then
+        diagLog("out-param tables for %s are all empty, "
+          .. "no return values arrived either", fnName)
         return
     end
 
     local typeParts = {}
-    for k, v in pairs(first) do
-        typeParts[#typeParts + 1] = string.format("%s=%s(%s)", tostring(k), type(v), tostring(v))
+    for i = 1, #argTables do
+        local t = argTables[i]
+        if type(t) == "table" then
+            for k, v in pairs(t) do
+                typeParts[#typeParts + 1] = string.format("%s=%s(%s)", tostring(k), type(v), tostring(v))
+            end
+        end
     end
     table.sort(typeParts)
     diagLog("out-param table for %s contained keys but none matched a "
